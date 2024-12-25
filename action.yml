@@ -1,0 +1,21 @@
+name: 'iOS Simulator UDID Action'
+description: 'Custom GitHub Action to retrieve the iOS Simulator UDID.'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Xcode command-line tools
+      run: xcode-select --install > /dev/null 2>&1 || true
+      shell: bash
+
+    - name: Set Xcode version
+      run: |
+        sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer > /dev/null 2>&1
+      shell: bash
+
+    - name: Start iOS Simulator and output UDID
+      run: |
+        DEVICE_UDID=$(xcrun simctl create "iPhone-13" com.apple.CoreSimulator.SimDeviceType.iPhone-13 com.apple.CoreSimulator.SimRuntime.iOS-17-0)
+        xcrun simctl boot $DEVICE_UDID > /dev/null 2>&1
+        echo $DEVICE_UDID > udid.txt
+      shell: bash
