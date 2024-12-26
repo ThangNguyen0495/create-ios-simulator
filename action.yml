@@ -3,9 +3,33 @@ description: 'Custom GitHub Action to retrieve the iOS Simulator UDID.'
 
 inputs:
   os_version:
-    description: 'iOS version to use for the simulator runtime (e.g., 17-5)'
+    description: |
+      iOS version to use for the simulator runtime. Specify the version in the format "major-minor" (e.g., "17-5").
+      Supported versions:
+        - iOS 17-0
+        - iOS 17-5
+        - iOS 16-4
+        - iOS 16-0
+        - iOS 15-5
+        - iOS 15-0
     required: false
-    default: '17-5'  # Default OS version
+    default: '17-5'
+
+  iphone_type:
+    description: |
+      iPhone type to use for the simulator. Choose from the following supported devices:
+        - iPhone-15
+        - iPhone-15-Plus
+        - iPhone-14
+        - iPhone-13
+        - iPhone-12
+        - iPhone-SE (3rd generation)
+        - iPhone-11
+        - iPhone-XR
+        - iPhone-X
+      To find the full list of supported devices on your system, run `xcrun simctl list devicetypes`.
+    required: false
+    default: 'iPhone-15'
 
 runs:
   using: 'composite'
@@ -22,8 +46,9 @@ runs:
     - name: Start iOS Simulator and output UDID
       run: |
         OS_VERSION=${{ inputs.os_version }}
-        echo "Creating iOS Simulator with runtime: iOS-$OS_VERSION"
-        DEVICE_UDID=$(xcrun simctl create "iPhone-13" com.apple.CoreSimulator.SimDeviceType.iPhone-13 com.apple.CoreSimulator.SimRuntime.iOS-$OS_VERSION)
+        IPHONE_TYPE=${{ inputs.iphone_type }}
+        echo "Creating iOS Simulator with device: $IPHONE_TYPE and runtime: iOS-$OS_VERSION"
+        DEVICE_UDID=$(xcrun simctl create "$IPHONE_TYPE" com.apple.CoreSimulator.SimDeviceType.$IPHONE_TYPE com.apple.CoreSimulator.SimRuntime.iOS-$OS_VERSION)
         xcrun simctl boot $DEVICE_UDID > /dev/null 2>&1
         echo $DEVICE_UDID > udid.txt
       shell: bash
