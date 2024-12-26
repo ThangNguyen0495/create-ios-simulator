@@ -1,6 +1,12 @@
 name: 'iOS Simulator UDID Action'
 description: 'Custom GitHub Action to retrieve the iOS Simulator UDID.'
 
+inputs:
+  os_version:
+    description: 'iOS version to use for the simulator runtime (e.g., 17-5)'
+    required: false
+    default: '17-5'  # Default OS version
+
 runs:
   using: 'composite'
   steps:
@@ -15,7 +21,9 @@ runs:
 
     - name: Start iOS Simulator and output UDID
       run: |
-        DEVICE_UDID=$(xcrun simctl create "iPhone-13" com.apple.CoreSimulator.SimDeviceType.iPhone-13 com.apple.CoreSimulator.SimRuntime.iOS-17-0)
+        OS_VERSION=${{ inputs.os_version }}
+        echo "Creating iOS Simulator with runtime: iOS-$OS_VERSION"
+        DEVICE_UDID=$(xcrun simctl create "iPhone-13" com.apple.CoreSimulator.SimDeviceType.iPhone-13 com.apple.CoreSimulator.SimRuntime.iOS-$OS_VERSION)
         xcrun simctl boot $DEVICE_UDID > /dev/null 2>&1
         echo $DEVICE_UDID > udid.txt
       shell: bash
