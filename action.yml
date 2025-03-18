@@ -34,7 +34,7 @@ runs:
 
     - name: Find Existing Simulator
       run: |
-        DEVICE_NAME="${{ inputs.iphone_type }}"
+        echo "DEVICE_NAME=${{ inputs.iphone_type }}" >> $GITHUB_ENV
         echo "Searching for an available simulator: $DEVICE_NAME..."
         
         DEVICE_UDID=$(xcrun simctl list devices available | grep -m 1 "$DEVICE_NAME (" | awk -F '[()]' '{print $2}')
