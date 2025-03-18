@@ -6,13 +6,13 @@ inputs:
     description: |
       iOS version to use for the simulator runtime. Specify the version in the format "major-minor" (e.g., "17-5").
     required: false
-    default: '17-5'
+    default: '17.5'
 
   iphone_type:
     description: |
-      iPhone model to use for the simulator (e.g., iPhone-15, iPhone-14).
+      iPhone model to use for the simulator (e.g., iPhone 15, iPhone 14).
     required: false
-    default: 'iPhone-15'
+    default: 'iPhone 15'
 
 runs:
   using: 'composite'
