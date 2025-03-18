@@ -5,50 +5,78 @@ inputs:
   os_version:
     description: |
       iOS version to use for the simulator runtime. Specify the version in the format "major-minor" (e.g., "17-5").
-      Supported versions:
-        - iOS 17-0
-        - iOS 17-5
-        - iOS 16-4
-        - iOS 16-0
-        - iOS 15-5
-        - iOS 15-0
     required: false
     default: '17-5'
 
   iphone_type:
     description: |
-      iPhone type to use for the simulator. Choose from the following supported devices:
-        - iPhone-15
-        - iPhone-15-Plus
-        - iPhone-14
-        - iPhone-13
-        - iPhone-12
-        - iPhone-SE (3rd generation)
-        - iPhone-11
-        - iPhone-XR
-        - iPhone-X
-      To find the full list of supported devices on your system, run `xcrun simctl list devicetypes`.
+      iPhone model to use for the simulator (e.g., iPhone-15, iPhone-14).
     required: false
     default: 'iPhone-15'
 
 runs:
   using: 'composite'
   steps:
-    - name: Install Xcode command-line tools
-      run: xcode-select --install > /dev/null 2>&1 || true
-      shell: bash
-
-    - name: Set Xcode version
+    - name: Install Xcode Command-Line Tools
       run: |
-        sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer > /dev/null 2>&1
+        echo "Checking for Xcode command-line tools..."
+        if ! xcode-select --version &> /dev/null; then
+          echo "Installing Xcode command-line tools..."
+          xcode-select --install
+        else
+          echo "Xcode command-line tools already installed."
+        fi
       shell: bash
 
-    - name: Start iOS Simulator and output UDID
+    - name: Set Xcode Version
+      run: |
+        echo "Setting Xcode version..."
+        sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+        xcodebuild -version
+      shell: bash
+
+    - name: List Available Simulators (Before Creating)
+      run: xcrun simctl list devices
+      shell: bash
+
+    - name: Create or Find Existing Simulator
       run: |
         OS_VERSION=${{ inputs.os_version }}
         IPHONE_TYPE=${{ inputs.iphone_type }}
-        echo "Creating iOS Simulator with device: $IPHONE_TYPE and runtime: iOS-$OS_VERSION"
-        DEVICE_UDID=$(xcrun simctl create "$IPHONE_TYPE" com.apple.CoreSimulator.SimDeviceType.$IPHONE_TYPE com.apple.CoreSimulator.SimRuntime.iOS-$OS_VERSION)
-        xcrun simctl boot $DEVICE_UDID > /dev/null 2>&1
+        RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-$OS_VERSION"
+        DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.$IPHONE_TYPE"
+
+        echo "Checking if a simulator already exists for $IPHONE_TYPE (iOS $OS_VERSION)..."
+        EXISTING_UDID=$(xcrun simctl list devices available | grep "$IPHONE_TYPE (iOS $OS_VERSION)" | awk -F '[()]' '{print $2}' | head -n 1)
+
+        if [[ -n "$EXISTING_UDID" ]]; then
+          echo "Using existing simulator: $EXISTING_UDID"
+          DEVICE_UDID=$EXISTING_UDID
+        else
+          echo "Creating a new iOS Simulator for $IPHONE_TYPE (iOS $OS_VERSION)..."
+          DEVICE_UDID=$(xcrun simctl create "$IPHONE_TYPE" $DEVICE_TYPE $RUNTIME_ID)
+          echo "Simulator created with UDID: $DEVICE_UDID"
+        fi
+
+        # Boot the simulator
+        echo "Booting simulator $DEVICE_UDID..."
+        xcrun simctl boot $DEVICE_UDID
+
+        # Store UDID for later steps
         echo $DEVICE_UDID > udid.txt
+        echo "DEVICE_UDID=$DEVICE_UDID" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Wait for Simulator to Boot
+      run: |
+        echo "Waiting for simulator ($DEVICE_UDID) to be fully booted..."
+        xcrun simctl bootstatus $DEVICE_UDID -b || {
+          echo "Error: Simulator failed to boot.";
+          exit 1;
+        }
+        echo "Simulator is ready!"
+      shell: bash
+
+    - name: Verify Simulator is Running
+      run: xcrun simctl list devices | grep "Booted"
       shell: bash
