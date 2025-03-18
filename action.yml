@@ -2,15 +2,8 @@ name: 'iOS Simulator UDID Action'
 description: 'Custom GitHub Action to retrieve the iOS Simulator UDID.'
 
 inputs:
-  os_version:
-    description: |
-      iOS version to use for the simulator runtime. Specify the version in the format "major-minor" (e.g., "17-5").
-    required: false
-    default: '17.5'
-
   iphone_type:
-    description: |
-      iPhone model to use for the simulator (e.g., iPhone 15, iPhone 14).
+    description: "iPhone model to use for the simulator (e.g., iPhone 15, iPhone 14)."
     required: false
     default: 'iPhone 15'
 
@@ -40,39 +33,40 @@ runs:
       shell: bash
 
     - name: Find Existing Simulator
+      id: find-simulator
       run: |
-        OS_VERSION=${{ inputs.os_version }}
-        IPHONE_TYPE=${{ inputs.iphone_type }}
-        RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-$OS_VERSION"
+        DEVICE_NAME="${{ inputs.iphone_type }}"
+        echo "Searching for an available simulator: $DEVICE_NAME..."
         
-        echo "Searching for an available simulator: $IPHONE_TYPE (iOS $OS_VERSION)..."
+        DEVICE_UDID=$(xcrun simctl list devices available | grep -m 1 "$DEVICE_NAME (" | awk -F '[()]' '{print $2}')
         
-        # Find an available simulator with the correct device type and OS version
-        DEVICE_UDID=$(xcrun simctl list devices available | grep "$IPHONE_TYPE (iOS $OS_VERSION)" | awk -F '[()]' '{print $2}' | head -n 1)
-    
         if [[ -z "$DEVICE_UDID" ]]; then
-          echo "ERROR: No available simulator found for $IPHONE_TYPE (iOS $OS_VERSION)."
+          echo "ERROR: No available simulator found for $DEVICE_NAME"
           exit 1
         fi
-    
+
         echo "Using existing simulator: $DEVICE_UDID"
-    
+        
         # Boot the found simulator
         echo "Booting simulator $DEVICE_UDID..."
-        xcrun simctl boot $DEVICE_UDID
-    
+        xcrun simctl boot "$DEVICE_UDID"
+
         # Store UDID for later steps
-        echo $DEVICE_UDID > udid.txt
         echo "DEVICE_UDID=$DEVICE_UDID" >> $GITHUB_ENV
+        echo "simulator_id=$DEVICE_UDID" >> $GITHUB_ENV
       shell: bash
+      
     - name: Wait for Simulator to Boot
       run: |
-        echo "Waiting for simulator ($DEVICE_UDID) to be fully booted..."
-        xcrun simctl bootstatus $DEVICE_UDID -b || {
-          echo "Error: Simulator failed to boot.";
-          exit 1;
-        }
-        echo "Simulator is ready!"
+        DEVICE_UDID="${{ env.DEVICE_UDID }}"
+        echo "Waiting for simulator ($DEVICE_UDID) to boot..."
+        
+        while ! xcrun simctl list devices | grep "$DEVICE_UDID" | grep -q "Booted"; do
+          echo "Still waiting for the simulator to boot..."
+          sleep 5
+        done
+        
+        echo "Simulator $DEVICE_UDID is now fully booted!"
       shell: bash
 
     - name: Verify Simulator is Running
