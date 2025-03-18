@@ -33,7 +33,6 @@ runs:
       shell: bash
 
     - name: Find Existing Simulator
-      id: find-simulator
       run: |
         DEVICE_NAME="${{ inputs.iphone_type }}"
         echo "Searching for an available simulator: $DEVICE_NAME..."
