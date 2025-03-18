@@ -52,7 +52,6 @@ runs:
 
         # Store UDID for later steps
         echo "DEVICE_UDID=$DEVICE_UDID" >> $GITHUB_ENV
-        echo "simulator_id=$DEVICE_UDID" >> $GITHUB_ENV
       shell: bash
       
     - name: Wait for Simulator to Boot
