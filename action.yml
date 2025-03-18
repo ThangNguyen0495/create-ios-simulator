@@ -39,34 +39,32 @@ runs:
       run: xcrun simctl list devices
       shell: bash
 
-    - name: Create or Find Existing Simulator
+    - name: Find Existing Simulator
       run: |
         OS_VERSION=${{ inputs.os_version }}
         IPHONE_TYPE=${{ inputs.iphone_type }}
         RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-$OS_VERSION"
-        DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.$IPHONE_TYPE"
-
-        echo "Checking if a simulator already exists for $IPHONE_TYPE (iOS $OS_VERSION)..."
-        EXISTING_UDID=$(xcrun simctl list devices available | grep "$IPHONE_TYPE (iOS $OS_VERSION)" | awk -F '[()]' '{print $2}' | head -n 1)
-
-        if [[ -n "$EXISTING_UDID" ]]; then
-          echo "Using existing simulator: $EXISTING_UDID"
-          DEVICE_UDID=$EXISTING_UDID
-        else
-          echo "Creating a new iOS Simulator for $IPHONE_TYPE (iOS $OS_VERSION)..."
-          DEVICE_UDID=$(xcrun simctl create "$IPHONE_TYPE" $DEVICE_TYPE $RUNTIME_ID)
-          echo "Simulator created with UDID: $DEVICE_UDID"
+        
+        echo "Searching for an available simulator: $IPHONE_TYPE (iOS $OS_VERSION)..."
+        
+        # Find an available simulator with the correct device type and OS version
+        DEVICE_UDID=$(xcrun simctl list devices available | grep "$IPHONE_TYPE (iOS $OS_VERSION)" | awk -F '[()]' '{print $2}' | head -n 1)
+    
+        if [[ -z "$DEVICE_UDID" ]]; then
+          echo "ERROR: No available simulator found for $IPHONE_TYPE (iOS $OS_VERSION)."
+          exit 1
         fi
-
-        # Boot the simulator
+    
+        echo "Using existing simulator: $DEVICE_UDID"
+    
+        # Boot the found simulator
         echo "Booting simulator $DEVICE_UDID..."
         xcrun simctl boot $DEVICE_UDID
-
+    
         # Store UDID for later steps
         echo $DEVICE_UDID > udid.txt
         echo "DEVICE_UDID=$DEVICE_UDID" >> $GITHUB_ENV
       shell: bash
-
     - name: Wait for Simulator to Boot
       run: |
         echo "Waiting for simulator ($DEVICE_UDID) to be fully booted..."
