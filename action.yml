@@ -40,6 +40,11 @@ runs:
 
     - name: Find Existing Simulator
       run: |
+        # Set simulator parameters and export them to the environment
+        echo "DEVICE_NAME=${{ inputs.iphone_type }}" >> $GITHUB_ENV
+        echo "OS_VERSION=${{ inputs.os_version }}" >> $GITHUB_ENV
+        
+        # Load the environment variables
         DEVICE_NAME=${{ inputs.iphone_type }}
         OS_VERSION=${{ inputs.os_version }}
         echo "Searching for an available simulator: $DEVICE_NAME..."
