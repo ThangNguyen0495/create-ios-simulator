@@ -39,11 +39,7 @@ runs:
       shell: bash
 
     - name: Find Existing Simulator
-      run: |
-        # # Set simulator parameters and export them to the environment
-        # echo "DEVICE_NAME=${{ inputs.iphone_type }}" >> $GITHUB_ENV
-        # echo "OS_VERSION=${{ inputs.os_version }}" >> $GITHUB_ENV
-        
+      run: |        
         # Load the environment variables with proper quoting
         export DEVICE_NAME="${{ inputs.iphone_type }}"
         export OS_VERSION="${{ inputs.os_version }}"
@@ -73,19 +69,19 @@ runs:
 
       shell: bash
       
-    # - name: Wait for Simulator to Boot
-    #   run: |
-    #     DEVICE_UDID="${{ env.DEVICE_UDID }}"
-    #     echo "Waiting for simulator ($DEVICE_UDID) to boot..."
+    - name: Wait for Simulator to Boot
+      run: |
+        DEVICE_UDID="${{ env.DEVICE_UDID }}"
+        echo "Waiting for simulator ($DEVICE_UDID) to boot..."
         
-    #     while ! xcrun simctl list devices | grep "$DEVICE_UDID" | grep -q "Booted"; do
-    #       echo "Still waiting for the simulator to boot..."
-    #       sleep 5
-    #     done
+        while ! xcrun simctl list devices | grep "$DEVICE_UDID" | grep -q "Booted"; do
+          echo "Still waiting for the simulator to boot..."
+          sleep 5
+        done
         
-    #     echo "Simulator $DEVICE_UDID is now fully booted!"
-    #   shell: bash
+        echo "Simulator $DEVICE_UDID is now fully booted!"
+      shell: bash
 
-    # - name: Verify Simulator is Running
-    #   run: xcrun simctl list devices | grep "Booted"
-    #   shell: bash
+    - name: Verify Simulator is Running
+      run: xcrun simctl list devices | grep "Booted"
+      shell: bash
