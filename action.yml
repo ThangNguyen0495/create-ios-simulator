@@ -68,20 +68,3 @@ runs:
         echo "DEVICE_UDID=$DEVICE_UDID" >> $GITHUB_ENV
 
       shell: bash
-      
-    - name: Wait for Simulator to Boot
-      run: |
-        DEVICE_UDID="${{ env.DEVICE_UDID }}"
-        echo "Waiting for simulator ($DEVICE_UDID) to boot..."
-        
-        while ! xcrun simctl list devices | grep "$DEVICE_UDID" | grep -q "Booted"; do
-          echo "Still waiting for the simulator to boot..."
-          sleep 5
-        done
-        
-        echo "Simulator $DEVICE_UDID is now fully booted!"
-      shell: bash
-
-    - name: Verify Simulator is Running
-      run: xcrun simctl list devices | grep "Booted"
-      shell: bash
