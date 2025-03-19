@@ -40,34 +40,25 @@ runs:
 
     - name: Find Existing Simulator
       run: |
-        # # Set simulator parameters and export them to the environment
-        # echo "DEVICE_NAME=${{ inputs.iphone_type }}" >> $GITHUB_ENV
-        # echo "OS_VERSION=${{ inputs.os_version }}" >> $GITHUB_ENV
-        
-        # # Load the environment variables
-        # DEVICE_NAME=${{ inputs.iphone_type }}
-        # OS_VERSION=${{ inputs.os_version }}
-        # echo "Searching for an available simulator: $DEVICE_NAME..."
-        
-        # DEVICE_UDID=$(xcrun simctl list devices | \
-        #   sed -n "/$OS_VERSION/,/^$/p" | \
-        #   grep -E "$DEVICE_NAME \(" | \
-        #   grep -oE '[A-Fa-f0-9-]{36}' | \
-        #   head -n 1 | tr -d '\n')
-        
-        # if [[ -z "$DEVICE_UDID" ]]; then
-        #   echo "ERROR: No available simulator found for $DEVICE_NAME"
-        #   exit 1
-        # fi
         # Set simulator parameters and export them to the environment
-        echo "DEVICE_NAME=iPhone 15" >> $GITHUB_ENV
-        echo "OS_VERSION=17.5" >> $GITHUB_ENV
+        echo "DEVICE_NAME=${{ inputs.iphone_type }}" >> $GITHUB_ENV
+        echo "OS_VERSION=${{ inputs.os_version }}" >> $GITHUB_ENV
         
         # Load the environment variables
-        DEVICE_NAME="iPhone 15"
-        OS_VERSION="17.5"
+        DEVICE_NAME=${{ inputs.iphone_type }}
+        OS_VERSION=${{ inputs.os_version }}
         
         echo "Searching for an available simulator: $DEVICE_NAME..."
+        
+        # # Set simulator parameters and export them to the environment
+        # echo "DEVICE_NAME=iPhone 15" >> $GITHUB_ENV
+        # echo "OS_VERSION=17.5" >> $GITHUB_ENV
+        
+        # # Load the environment variables
+        # DEVICE_NAME="iPhone 15"
+        # OS_VERSION="17.5"
+        
+        # echo "Searching for an available simulator: $DEVICE_NAME..."
         
         # Extract the UDID by filtering the list output
         DEVICE_UDID=$(xcrun simctl list devices | \
