@@ -2,6 +2,12 @@ name: 'iOS Simulator UDID Action'
 description: 'Custom GitHub Action to retrieve the iOS Simulator UDID.'
 
 inputs:
+  os_version:
+    description: |
+      iOS version to use for the simulator runtime. Specify the version in the format "major-minor" (e.g., "17.0", "17.2", "17.4", "17.5").
+    required: false
+    default: '17.5'
+
   iphone_type:
     description: "iPhone model to use for the simulator (e.g., iPhone 15, iPhone 14)."
     required: false
@@ -35,9 +41,10 @@ runs:
     - name: Find Existing Simulator
       run: |
         echo "DEVICE_NAME=${{ inputs.iphone_type }}" >> $GITHUB_ENV
+        echo "OS_VERSION==${{ inputs.os_version }}" >> $GITHUB_ENV
         echo "Searching for an available simulator: $DEVICE_NAME..."
         
-        DEVICE_UDID=$(xcrun simctl list devices available | grep -m 1 "$DEVICE_NAME (" | awk -F '[()]' '{print $2}')
+        DEVICE_UDID=$(xcrun simctl list devices | grep -A 1 "$OS_VERSION" | grep "$DEVICE_NAME" | awk -F '[()]' '{print $2}')
         
         if [[ -z "$DEVICE_UDID" ]]; then
           echo "ERROR: No available simulator found for $DEVICE_NAME"
