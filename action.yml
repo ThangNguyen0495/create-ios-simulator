@@ -45,8 +45,8 @@ runs:
         # echo "OS_VERSION=${{ inputs.os_version }}" >> $GITHUB_ENV
         
         # Load the environment variables with proper quoting
-        export DEVICE_NAME="iPhone 15"
-        export OS_VERSION="17.5"
+        export DEVICE_NAME="${{ inputs.iphone_type }}"
+        export OS_VERSION="${{ inputs.os_version }}"
         
         echo "Searching for an available simulator: $DEVICE_NAME..."
         
