@@ -44,7 +44,7 @@ runs:
         echo "OS_VERSION==${{ inputs.os_version }}" >> $GITHUB_ENV
         echo "Searching for an available simulator: $DEVICE_NAME..."
         
-        DEVICE_UDID=$(xcrun simctl list devices | grep -A 1 "$OS_VERSION" | grep "$DEVICE_NAME" | awk -F '[()]' '{print $2}')
+        DEVICE_UDID=$(xcrun simctl list devices | sed -n '/$OS_VERSION/,/^$/p' | grep -E "$DEVICE_NAME \(" | grep -oE '[A-Fa-f0-9-]{36}' | head -n 1 | tr -d '\n')
         
         if [[ -z "$DEVICE_UDID" ]]; then
           echo "ERROR: No available simulator found for $DEVICE_NAME"
