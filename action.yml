@@ -76,7 +76,7 @@ runs:
     
         while true; do
           status=$(xcrun simctl list devices | grep "$DEVICE_UDID")
-          
+          echo "$status"
           if echo "$status" | grep -q "Booted"; then
             echo "Simulator $DEVICE_UDID is now fully booted!"
             break
