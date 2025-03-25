@@ -4,51 +4,85 @@ description: 'Custom GitHub Action to retrieve the iOS Simulator UDID.'
 inputs:
   os_version:
     description: |
-      iOS version to use for the simulator runtime. Specify the version in the format "major-minor" (e.g., "17-5").
-      Supported versions:
-        - iOS 17-0
-        - iOS 17-5
-        - iOS 16-4
-        - iOS 16-0
-        - iOS 15-5
-        - iOS 15-0
+      iOS version to use for the simulator runtime. Specify the version in the format "major-minor" (e.g., "17.0", "17.2", "17.4", "17.5").
     required: false
-    default: '17-5'
+    default: '17.5'
 
   iphone_type:
-    description: |
-      iPhone type to use for the simulator. Choose from the following supported devices:
-        - iPhone-15
-        - iPhone-15-Plus
-        - iPhone-14
-        - iPhone-13
-        - iPhone-12
-        - iPhone-SE (3rd generation)
-        - iPhone-11
-        - iPhone-XR
-        - iPhone-X
-      To find the full list of supported devices on your system, run `xcrun simctl list devicetypes`.
+    description: "iPhone model to use for the simulator (e.g., iPhone 15, iPhone 14)."
     required: false
-    default: 'iPhone-15'
+    default: 'iPhone 15'
 
 runs:
   using: 'composite'
   steps:
-    - name: Install Xcode command-line tools
-      run: xcode-select --install > /dev/null 2>&1 || true
+    - name: Install Xcode Command-Line Tools
+      run: |
+        echo "Checking for Xcode command-line tools..."
+        if ! xcode-select --version &> /dev/null; then
+          echo "Installing Xcode command-line tools..."
+          xcode-select --install
+        else
+          echo "Xcode command-line tools already installed."
+        fi
       shell: bash
 
-    - name: Set Xcode version
+    - name: Set Xcode Version
       run: |
-        sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer > /dev/null 2>&1
+        echo "Setting Xcode version..."
+        sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+        xcodebuild -version
       shell: bash
 
-    - name: Create iOS Simulator
+    - name: List Available Simulators (Before Creating)
+      run: xcrun simctl list devices
+      shell: bash
+
+    - name: Find Existing Simulator
+      run: |        
+        # Load the environment variables with proper quoting
+        export DEVICE_NAME="${{ inputs.iphone_type }}"
+        export OS_VERSION="${{ inputs.os_version }}"
+        
+        echo "Searching for an available simulator: $DEVICE_NAME..."
+        
+        # Extract the UDID by filtering the list output
+        DEVICE_UDID=$(xcrun simctl list devices | \
+          sed -n "/${OS_VERSION}/,/^$/p" | \
+          grep -E "${DEVICE_NAME} \(" | \
+          grep -oE '[A-Fa-f0-9-]{36}' | \
+          head -n 1 | tr -d '\n')
+        
+        if [ -z "$DEVICE_UDID" ]; then
+          echo "Error: No simulator found for ${DEVICE_NAME} running ${OS_VERSION}."
+          exit 1
+        fi
+        
+        echo "Using existing simulator: $DEVICE_UDID"
+        
+        # Boot the found simulator
+        echo "Booting simulator $DEVICE_UDID..."
+        xcrun simctl boot "$DEVICE_UDID"
+        
+        # Store UDID for later steps
+        echo "DEVICE_UDID=$DEVICE_UDID" >> $GITHUB_ENV
+
+      shell: bash
+      
+    - name: Wait for Simulator to Boot
       run: |
-        OS_VERSION=${{ inputs.os_version }}
-        IPHONE_TYPE=${{ inputs.iphone_type }}
-        echo "Creating iOS Simulator with device: $IPHONE_TYPE and runtime: iOS-$OS_VERSION"
-        DEVICE_UDID=$(xcrun simctl create "$IPHONE_TYPE" com.apple.CoreSimulator.SimDeviceType.$IPHONE_TYPE com.apple.CoreSimulator.SimRuntime.iOS-$OS_VERSION)
-        xcrun simctl boot $DEVICE_UDID > /dev/null 2>&1
-         echo "DEVICE_UDID=$DEVICE_UDID" >> $GITHUB_ENV
+        DEVICE_UDID="${{ env.DEVICE_UDID }}"
+        echo "Waiting for simulator ($DEVICE_UDID) to boot..."
+    
+        while true; do
+          status=$(xcrun simctl list devices | grep "$DEVICE_UDID")
+          
+          if echo "$status" | grep -q "Booted"; then
+            echo "Simulator $DEVICE_UDID is now fully booted!"
+            break
+          fi
+    
+          echo "Still waiting for the simulator to boot..."
+          sleep 5
+        done
       shell: bash
